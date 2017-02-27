@@ -14,6 +14,9 @@ module reg_file (RR1,RR2,WR,WD,RegWrite,RD1,RD2,clock);
   assign RD2 = Regs[RR2];
 
   initial Regs[0] = 0;
+  initial Regs[1] = 0;
+  initial Regs[2] = 0;
+  initial Regs[3] = 0;
 
   always @(negedge clock)
     if (RegWrite==1 & WR!=0)
@@ -22,16 +25,16 @@ module reg_file (RR1,RR2,WR,WD,RegWrite,RD1,RD2,clock);
 endmodule
 
 //16bit ALU
-module alu (ALUctl,A,B,ALUOut,Zero);
+module alu (ALUOp,A,B,ALUOut,Zero);
 
-  input [2:0] ALUctl;
+  input [2:0] ALUOp;
   input [15:0] A,B;
   output reg [15:0] ALUOut;
   output Zero;
 
   assign Zero = (ALUOut==0); // Zero is true if ALUOut is 0
-  always @(ALUctl, A, B)     // reevaluate if these change
-    case (ALUctl)
+  always @(ALUOp, A, B)     // reevaluate if these change
+    case (ALUOp)
       3'b000: ALUOut <= A & B;
       3'b001: ALUOut <= A | B;
       3'b010: ALUOut <= A + B;
@@ -49,12 +52,12 @@ module MainControl (Op,Control);
   output reg [5:0] Control; //REGDST(1), REGWRITE(1), ALUSRC(1), OP(3)
 
   always @(Op) case (Op)
-    4'b0000: Control <= 6'b100010; // Rtype - ADD
-    4'b0001: Control <= 6'b100110; // Rtype - SUB
-    4'b0010: Control <= 6'b100000; // Rtype - AND
-    4'b0011: Control <= 6'b100001; // Rtype - OR
-    4'b0111: Control <= 6'b100111; // Rtype - SLT
-    4'b0100: Control <= 6'b101010; // Itype - ADDI
+    4'b0000: Control <= 6'b110010; // Rtype - ADD
+    4'b0001: Control <= 6'b110110; // Rtype - SUB
+    4'b0010: Control <= 6'b110000; // Rtype - AND
+    4'b0011: Control <= 6'b110001; // Rtype - OR
+    4'b0111: Control <= 6'b110111; // Rtype - SLT
+    4'b0100: Control <= 6'b111010; // Itype - ADDI
 
   endcase
 
