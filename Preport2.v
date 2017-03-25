@@ -272,8 +272,8 @@ module CPU (clock,WD,IR,PC);
    IMemory[0] = 16'b0101_00_01_00000000; //lw $1,0($0)
    IMemory[1] = 16'b0101_00_10_00000100; //lw $2,4($0)
    IMemory[2] = 16'b0111_01_10_11_000000; //slt $3,$1,$2
-   IMemory[3] = 16'b1000_11_00_00000100; //beq $3,$0,8
-// IMemory[3] = 16'b1001_11_00_00000100; bne $3,$0,8
+   IMemory[3] = 16'b1000_11_00_00000010; //beq $3,$0,2
+ //IMemory[3] = 16'b1001_11_00_00000010;// bne $3,$0,2
    IMemory[4] = 16'b0110_00_01_00000100; //sw $1,4($0)  
    IMemory[5] = 16'b0110_00_10_00000000; //sw $2,0($0)
    IMemory[6] = 16'b0101_00_01_00000000; //lw $1,0($0)
@@ -286,12 +286,12 @@ module CPU (clock,WD,IR,PC);
   
    initial PC = 0;
 
-   assign IR = IMemory[PC>>2]; 
+   assign IR = IMemory[PC>>1]; 
    assign SignExtend = {{8{IR[7]}},IR[7:0]}; // sign extension unit
    
    reg_file rf (IR[11:10],IR[9:8],WR,WD,RegWrite,A,RD2,clock);
 	 
-   ALU fetch (3'b010,PC,4,PCplus4,Unused1);
+   ALU fetch (3'b010,PC,2,PCplus4,Unused1);
 
    ALU ex (ALUctl, A, B, ALUOut, Zero);
   
