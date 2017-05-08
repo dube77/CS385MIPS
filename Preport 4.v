@@ -192,19 +192,21 @@ endmodule
 
  module MainControl(Op,Control);
    input [3:0] Op;
-  output reg [10:0] Control;
+  output reg [9:0] Control; 
 
   always @(Op) case (Op)
-  
-    4'b0000: Control <= 11'b10001000010; // ADD
-    4'b0001: Control <= 11'b10001000110; // SUB
-    4'b0010: Control <= 11'b10001000000; // AND
-    4'b0011: Control <= 11'b10001000001; // OR
-    4'b0111: Control <= 11'b10001000111; // SLT
-    4'b0101: Control <= 11'b00111000010; // LW
-    4'b0110: Control <= 11'b00100100010; // SW
-    4'b1000: Control <= 11'b00000001110; // BEQ
    
+    4'b0000: Control <= 10'b1001_000_010; // ADD
+    4'b0001: Control <= 10'b1001_000_110; // SUB
+    4'b0010: Control <= 10'b1001_000_000; // AND
+    4'b0011: Control <= 10'b1001_000_001; // OR
+    4'b0111: Control <= 10'b1001_000_111; // SLT
+	4'b0100: Control <= 10'b0101_000_010; // ADDI
+    4'b0101: Control <= 10'b0111_000_010; // LW
+    4'b0110: Control <= 10'b0100_100_010; // SW
+    4'b1000: Control <= 10'b0000_001_110; // BEQ
+	4'b1001: Control <= 10'b0000_010_110; // BNE
+    4'b1111: Control <= 10'b0101_000_110; // LUI 
   endcase
   
   endmodule
@@ -215,52 +217,66 @@ module CPU (clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
   input clock;
   output [15:0] PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD;
 
-  initial begin 
-// Program: swap memory cells (if needed) and compute absolute value |5-7|=2
-   IMemory[0]  = 32'h8c080000;  // lw $8, 0($0)
-   IMemory[1]  = 32'h8c090004;  // lw $9, 4($0)
-   IMemory[2]  = 32'h00000000;  // nop
-   IMemory[3]  = 32'h00000000;  // nop
-   IMemory[4]  = 32'h00000000;  // nop
-   IMemory[5]  = 32'h0109502a;  // slt $10, $8, $9
-   IMemory[6]  = 32'h00000000;  // nop
-   IMemory[7]  = 32'h00000000;  // nop
-   IMemory[8]  = 32'h00000000;  // nop
-   IMemory[9]  = 32'h11400005;  // beq $10, $0, IMemory[15]  
-   IMemory[10] = 32'h00000000;  // nop
-   IMemory[11] = 32'h00000000;  // nop
-   IMemory[12] = 32'h00000000;  // nop
-   IMemory[13] = 32'hac080004;  // sw $8, 4($0)
-   IMemory[14] = 32'hac090000;  // sw $9, 0($0)
-   IMemory[15] = 32'h00000000;  // nop
-   IMemory[16] = 32'h00000000;  // nop
-   IMemory[17] = 32'h00000000;  // nop
-   IMemory[18] = 32'h8c080000;  // lw $8, 0($0)
-   IMemory[19] = 32'h8c090004;  // lw $9, 4($0)
-   IMemory[20] = 32'h00000000;  // nop
-   IMemory[21] = 32'h00000000;  // nop
-   IMemory[22] = 32'h00000000;  // nop
-   IMemory[23] = 32'h01095022;  // sub $10, $8, $9
+initial begin 
+IMemory[0]    = 16'b1111_00_11_00000001;  // lui $1, 1 $1 contains the address of memory
+   IMemory[1]   = 16'b0000000000000000;  // nop   
+   IMemory[2]   = 16'b0000000000000000;  // nop 
+   IMemory[3]   = 16'b0000000000000000;  // nop   
+   IMemory[4]    = 16'b0101_00_10_00000000;  // lw $2,0($0)  load $2 with the first data in memory
+   IMemory[5]   = 16'b0000000000000000;  // nop
+   IMemory[6]   = 16'b0000000000000000;  // nop
+   IMemory[7]   = 16'b0000000000000000;  // nop
+   IMemory[8]    = 16'b0100_00_01_00000001;  //  addi $1,$0,1 initialize $1 to 1
+   IMemory[9]   = 16'b0000000000000000;  // nop
+   IMemory[10] = 16'b0000000000000000;  // nop
+   IMemory[11] = 16'b0000000000000000;  // nop
+   IMemory[12]   = 16'b0100_00_11_00000101;  // addi  $3, $0, 5 initialize $3 to 5..used for checking
+   IMemory[13] = 16'b0000000000000000;  // nop
+   IMemory[14] = 16'b0000000000000000;  // nop
+   IMemory[15] = 16'b0000000000000000;  // nop
+   IMemory[16]   = 16'b0100_10_10_00000010;  // addi $2, $2,2 add 2 to $2 
+   IMemory[17] = 16'b0000000000000000;  // nop
+   IMemory[18] = 16'b0000000000000000;  // nop
+   IMemory[19] = 16'b0000000000000000;  // nop
+   IMemory[20]   = 16'b0001_10_01_10_000000;  // sub $2,$2,$1 subtract $1 from $2
+   IMemory[21] = 16'b0000000000000000;  // nop
+   IMemory[22] = 16'b0000000000000000;  // nop
+   IMemory[23] = 16'b0000000000000000;  // nop
+   IMemory[24]   = 16'b1001_11_10_11110110;  //   bne $2,$3,-13 loop back 13 if $2 != $3 if not incremented to 5 yet
+   IMemory[25] = 16'b0000000000000000;  // nop
+   IMemory[26] = 16'b0000000000000000;  // nop
+   IMemory[27] = 16'b0000000000000000;  // nop
+   IMemory[28]   = 16'b1111_00_01_00000001;  // lui $1, 1 $1 points to the address in memory
+   IMemory[29] = 16'b0000000000000000;  // nop
+   IMemory[30] = 16'b0000000000000000;  // nop
+   IMemory[31] = 16'b0000000000000000;  // nop
+   IMemory[32]   = 16'b0110_10_01_00000000;  // sw $2, $1 store into data section
+   IMemory[33] = 16'b0000000000000000;  // nop
+   IMemory[34] = 16'b0000000000000000;  // nop
+   IMemory[35] = 16'b0000000000000000;  // nop
+   
 // Data
-   DMemory [0] = 32'h5; // switch the cells and see how the simulation output changes
-   DMemory [1] = 32'h7; // (beq is taken if [0]=32'h7; [1]=32'h5, not taken otherwise)
+   DMemory [0] = 16'd2; // switch the cells and see how the simulation output changes
+
   end
 
 // Pipeline 
 
 // IF 
    wire [15:0] PCplus4, NextPC;
-   reg[15:0] PC, IMemory[0:1023], IFID_IR, IFID_PCplus4;
-   Alu fetch (3'b010,PC,4,PCplus4,Unused1);
+   reg[15:0] PC, IMemory[0:1023], IFID_IR, IFID_PCplus4;  
+   ALU fetch (3'b010,PC,2,PCplus4,Unused1);
   // assign NextPC = (EXMEM_Branch && EXMEM_Zero) ? EXMEM_Target: PCplus4;// refer BranchMux
-   BranchControl branch1 (bne,beq,Zero,branchcontrol);
+   BranchControl branch1 (EXMEM_bne,EXMEM_beq,EXMEM_Zero,branchcontrol);
+   
    mux2x16Bit PCaddress (PCplus4,EXMEM_Target,branchcontrol, NextPC);
    
    // ID
-   wire [10:0] Control;
+   wire [9:0] Control;
    reg IDEX_RegWrite,IDEX_MemtoReg,
-       IDEX_Branch,  IDEX_MemWrite,
+       IDEX_Branch,  IDEX_MemWrite, IDEX_bne,IDEX_beq,
        IDEX_ALUSrc,  IDEX_RegDst;
+   reg [2:0] IDEX_ALUctl,ALUctl; 
    reg [1:0]  IDEX_ALUOp;
    wire [15:0] RD1,RD2,SignExtend, WD;
    reg [15:0] IDEX_PCplus4,IDEX_RD1,IDEX_RD2,IDEX_SignExt,IDEXE_IR;
@@ -271,7 +287,7 @@ module CPU (clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
    assign SignExtend = {{8{IFID_IR[7]}},IFID_IR[7:0]}; 
    
    // EXE
-   reg EXMEM_RegWrite,EXMEM_MemtoReg,
+   reg EXMEM_RegWrite,EXMEM_MemtoReg, EXMEM_beq,EXMEM_bne,
        EXMEM_Branch,  EXMEM_MemWrite;
    wire [15:0] Target;
    reg EXMEM_Zero;
@@ -279,37 +295,37 @@ module CPU (clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
    reg [15:0] EXMEM_IR; // For monitoring the pipeline
    reg [1:0] EXMEM_rd;
    wire [15:0] B,ALUOut;
-   wire [2:0] ALUctl;
    wire [1:0] WR;
-   ALU branch (3'b010,IDEX_SignExt<<2,IDEX_PCplus4,Target,Unused2);
-   Alu ex (ALUctl, IDEX_RD1, B, ALUOut, Zero);
-   ALUControl ALUCtrl(IDEX_ALUOp, IDEX_SignExt[5:0], ALUctl); // ALU control unit
-   assign B  = (IDEX_ALUSrc) ? IDEX_SignExt: IDEX_RD2;        // ALUSrc Mux 
+   
+   ALU branch (3'b010,IDEX_SignExt<<1,IDEX_PCplus4,Target,Unused2);
+   ALU ex (ALUctl, IDEX_RD1, B, ALUOut, Zero);
+  
+   assign B  = (IDEX_ALUSrc) ? IDEX_SignExt: IDEX_RD2;   // ALUSrc Mux 
+    mux2x16Bit mux1(IDEX_RD2,IDEX_SignExt,IDEX_ALUSrc,B); // ALUSrcMux
   
   //assign WR = (IDEX_RegDst) ? IDEX_rd: IDEX_rt;  // RegDst Mux
   mux2x1Regmux mux(IDEX_rt,IDEX_rd,IDEX_RegDst,WR); // RegDst Mux
-  //not done
-  
+
   // MEM
    reg MEMWB_RegWrite,MEMWB_MemtoReg;
    reg [15:0] DMemory[0:1023],MEMWB_MemOut,MEMWB_ALUOut;
    reg [15:0] MEMWB_IR; // For monitoring the pipeline
    wire [15:0] MemOut;
    reg [1:0] MEMWB_rd;
-   assign MemOut = DMemory[EXMEM_ALUOut>>2];
-   always @(negedge clock) if (EXMEM_MemWrite) DMemory[EXMEM_ALUOut>>2] <= EXMEM_RD2;
+   assign MemOut = DMemory[EXMEM_ALUOut>>1];
+   always @(negedge clock) if (EXMEM_MemWrite) DMemory[EXMEM_ALUOut>>1] <= EXMEM_RD2;
    
    // WB
    //assign WD = (MEMWB_MemtoReg) ? MEMWB_MemOut: MEMWB_ALUOut; // MemtoReg Mux
-   mux2x16Bit MemtoReg(MEMWB_MemOut,MEMWB_ALUOut,MEMWB_MemtoReg,WD)
+   mux2x16Bit MemtoReg(MEMWB_ALUOut,MEMWB_MemOut,MEMWB_MemtoReg,WD); // MemtoReg Mux
    
-     initial begin
+   initial begin
     PC = 0;
 // Initialize pipeline registers
     IDEX_RegWrite=0;IDEX_MemtoReg=0;IDEX_Branch=0;IDEX_MemWrite=0;IDEX_ALUSrc=0;IDEX_RegDst=0;IDEX_ALUOp=0;
     IFID_IR=0;
-    EXMEM_RegWrite=0;EXMEM_MemtoReg=0;EXMEM_Branch=0;EXMEM_MemWrite=0;
-    EXMEM_Target=0;
+    EXMEM_RegWrite=0;EXMEM_MemtoReg=0;EXMEM_Branch=0;EXMEM_MemWrite=0;IDEX_beq = 0; IDEX_bne = 0; EXMEM_beq=0; EXMEM_bne=0; 
+    EXMEM_Target=0; IDEX_ALUctl=0;
     MEMWB_RegWrite=0;MEMWB_MemtoReg=0;
    end
    
@@ -324,14 +340,14 @@ module CPU (clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
 
 // ID
     IDEX_IR <= IFID_IR; // For monitoring the pipeline
-    {IDEX_RegDst,IDEX_ALUSrc,IDEX_MemtoReg,IDEX_RegWrite,IDEX_MemWrite,IDEX_Branch,IDEX_ALUOp} <= Control;   
+    {IDEX_RegDst,IDEX_ALUSrc,IDEX_MemtoReg,IDEX_RegWrite,IDEX_MemWrite,IDEX_bne,IDEX_beq, ALUctl[2:0]} <= Control;   
     IDEX_PCplus4 <= IFID_PCplus4;
     IDEX_RD1 <= RD1; 
     IDEX_RD2 <= RD2;
     IDEX_SignExt <= SignExtend;
     IDEX_rt <= IFID_IR[9:8];
     IDEX_rd <= IFID_IR[7:6];
-
+  
 // EXE
     EXMEM_IR <= IDEX_IR; // For monitoring the pipeline
     EXMEM_RegWrite <= IDEX_RegWrite;
@@ -343,6 +359,8 @@ module CPU (clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
     EXMEM_ALUOut <= ALUOut;
     EXMEM_RD2 <= IDEX_RD2;
     EXMEM_rd <= WR;
+	EXMEM_bne <= IDEX_bne; 
+	EXMEM_beq <= IDEX_beq; 
 
 // MEM
     MEMWB_IR <= EXMEM_IR; // For monitoring the pipeline
@@ -359,28 +377,7 @@ module CPU (clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
 
 endmodule  
 
-// Test module
-
-module test ();
-
-  reg clock;
-  wire [15:0] PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD;
-
-  CPU test_cpu(clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
-
-  always #1 clock = ~clock;
-  
-  initial begin
-    $display ("time PC  IFID_IR  IDEX_IR  EXMEM_IR MEMWB_IR WD");
-    $monitor ("%2d  %3d  %h %h %h %h %h", $time,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
-    clock = 1;
-    #56 $finish;
-  end
-
-endmodule
- 
-  
-  module BranchControl (bne,beq,Zero,branch_result);
+module BranchControl (bne,beq,Zero,branch_result);
 input bne,beq;
 input Zero;
 output branch_result;
@@ -392,7 +389,8 @@ wire w1,w2,w3;
   or  G4(branch_result,w2,w3);
 
 endmodule
-  
+// Test module
+
   module mux2x1Regmux(i0,i1,select,out);
  input [1:0] i0,i1;
  input select;
@@ -402,7 +400,7 @@ endmodule
    mux2x1 multiplexer2(i0[1],i1[1],select,out[1]);
 
  endmodule
- 
+  
  module mux2x16Bit(A,B,select,OUT);
  input [15:0] A,B;
  input select;
@@ -434,17 +432,28 @@ endmodule
  G3(wire2, B, select);
 or G4(OUT,wire1,wire2);
 endmodule
+ 
+module test ();
 
-   module BranchMux(A,B,Select,Out);
-   input A,B;
-   input[1:0] Select;
-   output Out;
-   wire w1,w2,w3,w4;
-   not G1(w1,Select);
-   and G2(w2,A,w1),
-   and G3(w3,B,Select);
-   or G4(w4,w2,w3);
-   
-   endmodule
+  reg clock;
+  wire [15:0] PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD;
+
+  CPU test_cpu(clock,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
+
+  always #1 clock = ~clock;
+  
+  initial begin
+    $display ("time PC  IFID_IR  IDEX_IR  EXMEM_IR MEMWB_IR WD");
+    $monitor ("%2d  %3d  %h %h %h %b %d", $time,PC,IFID_IR,IDEX_IR,EXMEM_IR,MEMWB_IR,WD);
+    clock = 1;
+    #529 $finish;
+  end
+
+endmodule
+
+
+  
+
+
    
    
